@@ -1,4 +1,6 @@
 # Initializing our blockcahin list
+MINING_REWARD = 10
+
 genesis_block = {
     'previous_hash': '',
     'transactions': []
@@ -16,6 +18,11 @@ def get_last_blockchain_value():
     return blockchain[-1]
 
 
+def verify_transaction(transaction):
+    sender_balance = get_balance(transaction['sender'])
+    return sender_balance >= transaction['amount']
+
+
 def add_transaction(recipient, sender=owner, amount=1.0):
     """ Add a new value as well as the las value of the blockchin to the block 
 
@@ -29,15 +36,24 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         'recipient': recipient,
         'amount': amount
     }
-    open_transactions.append(transaction)
-    participants.add(sender)
-    participants.add(recipient)
+    if verify_transaction(transaction):
+        open_transactions.append(transaction)
+        participants.add(sender)
+        participants.add(recipient)
+        return True
+
+    return False
 
 
 def mine_block():
     last_block = blockchain[-1]
     hashed_block = hash_block(last_block)
-
+    reward_transacton = {
+        'sender': 'MINNING',
+        'recipient': owner,
+        'amount': MINING_REWARD
+    }
+    open_transactions.append(reward_transacton)
     block = {
         'previous_hash': hashed_block,
         'transactions': open_transactions
@@ -54,6 +70,8 @@ def hash_block(block):
 def get_balance(participant):
     tx_sender = [[tx['amount'] for tx in block['transactions']
                   if tx['sender'] == participant] for block in blockchain]
+    open_tx_sender = [tx['amount'] for tx in open_transactions if tx['sender'] == participant]
+    tx_sender.append(open_tx_sender)
     amount_sent = 0
     for tx in tx_sender:
         if len(tx) > 0:
@@ -116,8 +134,10 @@ while waiting_for_input:
     if user_choice == '1':
         tx_data = get_transaction_value()
         recipient, amount = tx_data
-        add_transaction(recipient, amount=amount)
-        print(open_transactions)
+        if add_transaction(recipient, amount=amount):
+            print('Added transaction!')
+        else:
+            print('Trasaction failed!')
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
@@ -141,6 +161,6 @@ while waiting_for_input:
         print('Invalid blockchain')
         waiting_for_input = False
 
-    print(get_balance('Miguel'))
+    print('Your balance is: ' + str(get_balance('Miguel')))
 
 print('Done!')
