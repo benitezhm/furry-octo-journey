@@ -3,7 +3,7 @@ import json
 
 
 def hash_string_256(string):
-    hashlib.sha256(string).hexdigest()
+    return hashlib.sha256(string).hexdigest()
 
 def hash_block(block):
     """

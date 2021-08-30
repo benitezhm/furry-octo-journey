@@ -3,7 +3,7 @@ import hashlib
 import json
 from collections import OrderedDict
 
-import hash_util
+from hash_util import hash_block, hash_string_256
 
 # Initializing our blockcahin list
 MINING_REWARD = 10
@@ -68,7 +68,7 @@ def mine_block():
 
 def valid_proof(transactions, last_hash, proof_number):
     guess = (str(transactions) + str(last_hash) + str(proof_number)).encode()
-    guess_hash = hashlib.sha256(guess).hexdigest()
+    guess_hash = hash_string_256(guess)
     return guess_hash[0:2] == "00"
 
 
