@@ -1,6 +1,6 @@
 from functools import reduce
-import hashlib
 import json
+import pickle
 from collections import OrderedDict
 
 from hash_util import hash_block, hash_string_256
@@ -39,9 +39,11 @@ def add_transaction(recipient, sender=OWNER, amount=1.0):
         :recipeint: the recipient of the coins
         :amount: The amount of coins sent with the transacion (default = 1.0)
     """
-    transaction = OrderedDict([('sender', sender), ('recipient', recipient), ('amount', amount)])
+    transaction = OrderedDict(
+        [('sender', sender), ('recipient', recipient), ('amount', amount)])
     if verify_transaction(transaction):
         open_transactions.append(transaction)
+        save_data()
         participants.add(sender)
         participants.add(recipient)
         return True
@@ -64,6 +66,27 @@ def mine_block():
     }
     blockchain.append(block)
     return True
+
+
+def save_data():
+    with open('blockchain.p', mode='wb') as file:
+        data = {
+            'chain': blockchain,
+            'ot': open_transactions
+        }
+        file.write(pickle.dumps(data))
+
+
+def load_data():
+    with open('blockchain.p', mode='rb') as file:
+        file_content = pickle.loads(file.read())
+        global blockchain
+        global open_transactions
+        blockchain = file_content['chain']
+        open_transactions = file_content['ot']
+
+
+load_data()
 
 
 def valid_proof(transactions, last_hash, proof_number):
@@ -164,6 +187,7 @@ while waiting_for_input:
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
+            save_data()
     elif user_choice == '3':
         print_blockain_elements()
     elif user_choice == '4':
