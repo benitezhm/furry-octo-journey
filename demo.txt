@@ -1,1 +1,0 @@
-Testing if the file is closed
