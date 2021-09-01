@@ -8,12 +8,8 @@ from hash_util import hash_block, hash_string_256
 # Initializing our blockcahin list
 MINING_REWARD = 10
 
-genesis_block = {
-    'previous_hash': '',
-    'transactions': [],
-    'proof': 100
-}
-blockchain = [genesis_block]
+
+blockchain = []
 open_transactions = []
 OWNER = 'Miguel'
 participants = set(['Miguel'])
@@ -69,21 +65,34 @@ def mine_block():
 
 
 def save_data():
-    with open('blockchain.p', mode='wb') as file:
-        data = {
-            'chain': blockchain,
-            'ot': open_transactions
-        }
-        file.write(pickle.dumps(data))
+    try:
+        with open('blockchain.p', mode='wb') as file:
+            data = {
+                'chain': blockchain,
+                'ot': open_transactions
+            }
+            file.write(pickle.dumps(data))
+    except IOError:
+        print('Save failed! File not found!')
 
 
 def load_data():
-    with open('blockchain.p', mode='rb') as file:
-        file_content = pickle.loads(file.read())
-        global blockchain
-        global open_transactions
-        blockchain = file_content['chain']
-        open_transactions = file_content['ot']
+    global blockchain
+    global open_transactions
+    try:
+        with open('blockchain.p', mode='rb') as file:
+            file_content = pickle.loads(file.read())
+
+            blockchain = file_content['chain']
+            open_transactions = file_content['ot']
+    except (IOError, IndexError):
+        genesis_block = {
+            'previous_hash': '',
+            'transactions': [],
+            'proof': 100
+        }
+        blockchain = [genesis_block]
+        open_transactions = []
 
 
 load_data()
