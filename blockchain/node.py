@@ -28,7 +28,7 @@ class Node:
             elif user_choice == '4':
                 print(self.participants)
             elif user_choice == '5':
-                if Verification.verify_transactions(self.blockchain.open_transactions, self.blockchain.get_balance):
+                if Verification.verify_transactions(self.blockchain.get_open_transactions(), self.blockchain.get_balance):
                     print('All transactions are valid')
                 else:
                     print('There are invalid transactions')
@@ -37,7 +37,7 @@ class Node:
             else:
                 print('Input was inavalid, please pick a value form the list')
 
-            if not Verification.verify_chain(self.blockchain.chain):
+            if not Verification.verify_chain(self.blockchain.get_chain()):
                 self.print_blockain_elements()
                 print('Invalid blockchain')
                 waiting_for_input = False
@@ -62,7 +62,7 @@ class Node:
     def print_blockain_elements(self):
         # output all the blocks in the blockchain
         index = 1
-        for block in self.blockchain.chain:
+        for block in self.blockchain.get_chain():
             print('Outputting block ' + str(index))
             print(block)
             index += 1
