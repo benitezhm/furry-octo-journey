@@ -4,8 +4,8 @@ import pickle
 from block import Block
 from transaction import Transaction
 
-from hash_util import hash_block
-from verification import Verification
+from util.hash_util import hash_block
+from util.verification import Verification
 
 # Initializing our blockchain list
 MINING_REWARD = 10
