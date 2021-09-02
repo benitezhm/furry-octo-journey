@@ -1,14 +1,19 @@
 from blockchain import Blockchain
 from util.verification import Verification
+from wallet import Wallet
 
 from uuid import uuid4
 
 
 class Node:
 
+    # TODO eliminate corrupted transactions
+    # TODO implement a hack for the blockchain with tests for open transactions
     def __init__(self):
-        self.id = 'Miguel'
-        self.blockchain = Blockchain(self.id)
+        # TODO improve this blockchain instantiation/initialization
+        self.wallet = Wallet()
+        self.wallet.create_keys()
+        self.blockchain = Blockchain(self.wallet.public_key)
 
     def listen_for_input(self):
         waiting_for_input = True
@@ -17,12 +22,14 @@ class Node:
             if user_choice == '1':
                 tx_data = self.get_transaction_value()
                 recipient, amount = tx_data
-                if self.blockchain.add_transaction(recipient, self.id, amount=amount):
+                signature = self.wallet.sign_transaction(sender=self.wallet.public_key, recipient=recipient, amount=amount)
+                if self.blockchain.add_transaction(recipient, self.wallet.public_key, signature, amount=amount):
                     print('Added transaction!')
                 else:
                     print('Transaction failed!')
             elif user_choice == '2':
-                self.blockchain.mine_block()
+                if self.blockchain.mine_block() == False:
+                    print('Mining failed. Got no wallet?')
             elif user_choice == '3':
                 self.print_blockain_elements()
             elif user_choice == '4':
@@ -32,6 +39,14 @@ class Node:
                     print('All transactions are valid')
                 else:
                     print('There are invalid transactions')
+            elif user_choice == '6':
+                self.wallet.create_keys()
+                self.blockchain = Blockchain(self.wallet.public_key)
+            elif user_choice == '7':
+                self.wallet.load_keys()
+                self.blockchain = Blockchain(self.wallet.public_key)
+            elif user_choice == '8':
+                self.wallet.save_keys()
             elif user_choice == 'q':
                 waiting_for_input = False
             else:
@@ -43,7 +58,7 @@ class Node:
                 waiting_for_input = False
 
             print('Balance of {}: {:6.2f}'.format(
-                self.id, self.blockchain.get_balance()))
+                self.wallet.public_key, self.blockchain.get_balance()))
 
         print('Done!')
 
@@ -55,6 +70,9 @@ class Node:
         print('3: Output the blockchain blocks')
         print('4: Output participants')
         print('5: Check transaction validity')
+        print('6: Crate wallet')
+        print('7: Load wallet')
+        print('8: Save keys')
         print('q: Quit')
         user_input = input('Your choice: ')
         return user_input
@@ -76,5 +94,6 @@ class Node:
         return (tx_recipient, tx_amount)
 
 
-node = Node()
-node.listen_for_input()
+if __name__ == '__main__':
+    node = Node()
+    node.listen_for_input()

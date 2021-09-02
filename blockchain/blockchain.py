@@ -3,6 +3,7 @@ import pickle
 
 from block import Block
 from transaction import Transaction
+from wallet import Wallet
 
 from util.hash_util import hash_block
 from util.verification import Verification
@@ -57,7 +58,7 @@ class Blockchain:
         return proof
 
     def get_balance(self):
-        """Calcualte and return the balance of a participant."""
+        """Calculate and return the balance of a participant."""
         participant = self.hosting_node
         tx_sender = [[tx.amount for tx in block.transactions
                       if tx.sender == participant] for block in self.__chain]
@@ -80,15 +81,19 @@ class Blockchain:
             return None
         return self.__chain[-1]
 
-    def add_transaction(self, recipient, sender, amount=1.0):
-        """ Add a new value as well as the las value of the blockchin to the block 
+    def add_transaction(self, recipient, sender, signature, amount=1.0):
+        """ Add a new value as well as the las value of the blockchin to the block
 
         Arguments:
             :sender: The sender of the coins
             :recipeint: the recipient of the coins
             :amount: The amount of coins sent with the transacion (default = 1.0)
         """
-        transaction = Transaction(sender, recipient, amount)
+        if self.hosting_node == None:
+            return False
+        transaction = Transaction(sender, recipient, signature, amount)
+        if not Wallet.verify_transaction(transaction):
+            return False
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
             self.save_data()
@@ -97,15 +102,20 @@ class Blockchain:
         return False
 
     def mine_block(self):
+        if self.hosting_node == None:
+            return False
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)
         proof = self.proof_of_work()
         reward_transaction = Transaction(
-            'MINNING', self.hosting_node, MINING_REWARD)
+            'MINING', self.hosting_node, '', MINING_REWARD)
         copied_transactions = self.__open_transactions[:]
         copied_transactions.append(reward_transaction)
         block = Block(len(self.__chain), hashed_block,
                       copied_transactions, proof)
+        for tx in block.transactions:
+            if not Wallet.verify_transaction(tx):
+                return False
         self.__chain.append(block)
         self.__open_transactions = []
         self.save_data()
