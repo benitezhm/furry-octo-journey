@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from wallet import Wallet
@@ -10,16 +10,22 @@ blockchain = Blockchain(wallet.public_key)
 CORS(app)
 
 
+@app.route('/', methods=['GET'])
+def get_ui():
+    return send_from_directory('ui', 'node.html')
+
+
 @app.route('/wallet', methods=['POST'])
 def create_keys():
     global blockchain
     wallet.create_keys()
     if wallet.save_keys():
+        blockchain = Blockchain(wallet.public_key)
         response = {
             'public_key': wallet.public_key,
-            'private_key': wallet.private_key
+            'private_key': wallet.private_key,
+            'funds': blockchain.get_balance()
         }
-        blockchain = Blockchain(wallet.public_key)
         return jsonify(response), 201
     else:
         response = {
@@ -32,11 +38,12 @@ def create_keys():
 def load_keys():
     global blockchain
     if wallet.load_keys():
+        blockchain = Blockchain(wallet.public_key)
         response = {
             'public_key': wallet.public_key,
-            'private_key': wallet.private_key
+            'private_key': wallet.private_key,
+            'funds': blockchain.get_balance()
         }
-        blockchain = Blockchain(wallet.public_key)
         return jsonify(response), 200
     else:
         response = {
@@ -45,9 +52,47 @@ def load_keys():
         return jsonify(response), 500
 
 
-@app.route('/', methods=['GET'])
-def get_ui():
-    return 'This works!'
+@app.route('/transaction', methods=['POST'])
+def add_transaction():
+    if wallet.public_key == None:
+        response = {
+            'message': 'No wallet set up.'
+        }
+        return jsonify(response), 400
+    data = request.get_json()
+    if not data:
+        response = {
+            'message': 'No data found!'
+        }
+        return jsonify(response), 400
+    required_fields = ['recipient', 'amount']
+    if not all(field in data for field in required_fields):
+        response = {
+            'message': 'Required data is missing.'
+        }
+        return jsonify(response), 400
+
+    signature = wallet.sign_transaction(
+        wallet.public_key, data['recipient'], data['amount'])
+    success = blockchain.add_transaction(
+        data['recipient'], wallet.public_key, signature, data['amount'])
+    if success:
+        response = {
+            'message': 'Successfully added transaction.',
+            'transaction': {
+                'sender': wallet.public_key,
+                'recipient': data['recipient'],
+                'amount': data['amount'],
+                'signature': signature
+            },
+            'funds': blockchain.get_balance()
+        }
+        return jsonify(response), 201
+    else:
+        response = {
+            'message': 'Creating a transaction failed.'
+        }
+        return jsonify(response), 500
 
 
 @app.route('/mine', methods=['POST'])
@@ -59,13 +104,39 @@ def mine():
             tx.__dict__ for tx in dict_block['transactions']]
         response = {
             'message': 'Block added successfully.',
-            'block': dict_block
+            'block': dict_block,
+            'funds': blockchain.get_balance()
         }
         return jsonify(dict_block), 200
     else:
         response = {
             'message': 'Adding a block failed.',
             'wallet_set_up': wallet.public_key != None
+        }
+        return jsonify(response), 500
+
+
+@app.route('/transactions', methods=['GET'])
+def get_open_transactions():
+    transactions = blockchain.get_open_transactions()
+    dict_transactions = [tx.__dict__ for tx in transactions]
+
+    return jsonify(dict_transactions), 200
+
+
+@app.route('/balance', methods=['GET'])
+def get_balance():
+    balance = blockchain.get_balance()
+    if balance != None:
+        response = {
+            'message': 'Fetch balance successfully.',
+            'funds': balance
+        }
+        return jsonify(response), 200
+    else:
+        response = {
+            'message': 'Loading balance failed.',
+            'wallet': wallet.public_key != None
         }
         return jsonify(response), 500
 
