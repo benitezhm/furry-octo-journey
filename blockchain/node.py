@@ -107,7 +107,7 @@ def mine():
             'block': dict_block,
             'funds': blockchain.get_balance()
         }
-        return jsonify(dict_block), 200
+        return jsonify(response), 200
     else:
         response = {
             'message': 'Adding a block failed.',
