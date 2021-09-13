@@ -18,6 +18,7 @@ class Blockchain:
         genesis_block = Block(0, '', [], 100, 0)
         self.__chain = [genesis_block]
         self.__open_transactions = []
+        self.__peer_nodes = set()
         self.load_data()
         self.hosting_node = hosting_node_id
 
@@ -35,6 +36,7 @@ class Blockchain:
 
                 self.__chain = file_content['chain']
                 self.__open_transactions = file_content['ot']
+                self.__peer_nodes = file_content['nodes']
         except (IOError, IndexError):
             pass
 
@@ -43,7 +45,8 @@ class Blockchain:
             with open('blockchain.p', mode='wb') as file:
                 data = {
                     'chain': self.__chain,
-                    'ot': self.__open_transactions
+                    'ot': self.__open_transactions,
+                    'nodes': self.__peer_nodes
                 }
                 file.write(pickle.dumps(data))
         except IOError:
@@ -120,3 +123,25 @@ class Blockchain:
         self.__open_transactions = []
         self.save_data()
         return block
+
+    def add_peer_node(self, node):
+        """Add a new node to the peer node set.
+
+        Arguments:
+            :node: The node url that should be added.
+        """
+        self.__peer_nodes.add(node)
+        self.save_data()
+
+    def remove_peer_node(self, node):
+        """Remove a node from the peer node set.
+
+        Arguments:
+            :node: The node url that should be removed
+        """
+        self.__peer_nodes.discard(node)
+        self.save_data()
+
+    def get_peer_nodes(self):
+        """Return a list of all connected peer nodes"""
+        return list(self.__peer_nodes)
