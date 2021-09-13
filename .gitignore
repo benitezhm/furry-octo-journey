@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-blockchain.p
+blockchain*.p
 demo.txt
 task.p
-wallet.txt
+wallet*.txt

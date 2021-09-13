@@ -13,14 +13,15 @@ MINING_REWARD = 10
 
 
 class Blockchain:
-    def __init__(self, hosting_node_id):
+    def __init__(self, public_key, node_id):
         # Initializing the blockchain list
         genesis_block = Block(0, '', [], 100, 0)
         self.__chain = [genesis_block]
         self.__open_transactions = []
         self.__peer_nodes = set()
+        self.node_id = node_id
+        self.public_key = public_key
         self.load_data()
-        self.hosting_node = hosting_node_id
 
     def get_chain(self):
         return self.__chain[:]
@@ -31,7 +32,7 @@ class Blockchain:
     def load_data(self):
         """Initialize blockchain + open transactions data from file."""
         try:
-            with open('blockchain.p', mode='rb') as file:
+            with open('blockchain-{}.p'.format(self.node_id), mode='rb') as file:
                 file_content = pickle.loads(file.read())
 
                 self.__chain = file_content['chain']
@@ -42,7 +43,7 @@ class Blockchain:
 
     def save_data(self):
         try:
-            with open('blockchain.p', mode='wb') as file:
+            with open('blockchain-{}.p'.format(self.node_id), mode='wb') as file:
                 data = {
                     'chain': self.__chain,
                     'ot': self.__open_transactions,
@@ -62,9 +63,9 @@ class Blockchain:
 
     def get_balance(self):
         """Calculate and return the balance of a participant."""
-        if self.hosting_node == None:
+        if self.public_key == None:
             return None
-        participant = self.hosting_node
+        participant = self.public_key
         tx_sender = [[tx.amount for tx in block.transactions
                       if tx.sender == participant] for block in self.__chain]
         open_tx_sender = [tx.amount
@@ -94,7 +95,7 @@ class Blockchain:
             :recipeint: the recipient of the coins
             :amount: The amount of coins sent with the transacion (default = 1.0)
         """
-        if self.hosting_node == None:
+        if self.public_key == None:
             return False
         transaction = Transaction(sender, recipient, signature, amount)
         if Verification.verify_transaction(transaction, self.get_balance):
@@ -105,13 +106,13 @@ class Blockchain:
         return False
 
     def mine_block(self):
-        if self.hosting_node == None:
+        if self.public_key == None:
             return None
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)
         proof = self.proof_of_work()
         reward_transaction = Transaction(
-            'MINING', self.hosting_node, '', MINING_REWARD)
+            'MINING', self.public_key, '', MINING_REWARD)
         copied_transactions = self.__open_transactions[:]
         for tx in copied_transactions:
             if not Wallet.verify_transaction(tx):
