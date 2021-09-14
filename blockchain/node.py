@@ -55,6 +55,72 @@ def load_keys():
         return jsonify(response), 500
 
 
+@app.route('/broadcast-transaction', methods=['POST'])
+def broadcat_transaction():
+    values = request.get_json()
+    if not values:
+        response = {
+            'message': 'No data found.'
+        }
+        return jsonify(response), 400
+
+    required = ['sender', 'recipient', 'amount', 'signature']
+    if not all(key in values for key in required):
+        response = {
+            'message': 'Some data is missing.'
+        }
+        return jsonify(response), 400
+
+    success = blockchain.add_transaction(
+        values['recipient'], values['sender'], values['signature'], values['amount'], is_receiving=True)
+    if success:
+        response = {
+            'message': 'Successfully added transaction.',
+            'transaction': {
+                'sender': values['sender'],
+                'recipient': values['recipient'],
+                'amount': values['amount'],
+                'signature': values['signature']
+            }
+        }
+        return jsonify(response), 201
+    else:
+        response = {
+            'message': 'Creating a transaction failed.'
+        }
+        return jsonify(response), 500
+
+
+@app.route('/broadcast-block', methods=['POST'])
+def broadcast_block():
+    values = request.get_json()
+    if not values:
+        response = {'message': 'No data found.'}
+        return jsonify(response), 400
+    if 'block' not in values:
+        response = {'message': 'Some data is missing.'}
+        return jsonify(response), 400
+    block = values['block']
+    if block['index'] == blockchain.chain[-1].index + 1:
+        if blockchain.add_block(block):
+            response = {
+                'message': 'Block added'
+            }
+            return jsonify(response), 201
+        else:
+            response = {
+                'message': 'Block seems invalid.'
+            }
+            return jsonify(response), 500
+    elif block['index'] > blockchain.chain[-1].index:
+        pass
+    else:
+        response = {
+            'message': 'Blockchain seems to be shorter, block not added.'
+        }
+        return jsonify(response), 409
+
+
 @app.route('/transaction', methods=['POST'])
 def add_transaction():
     if wallet.public_key == None:
@@ -146,7 +212,7 @@ def get_balance():
 
 @app.route('/chain', methods=['GET'])
 def get_cain():
-    chain_snapshot = blockchain.get_chain()
+    chain_snapshot = blockchain.chain
     dict_chain = [block.__dict__.copy() for block in chain_snapshot]
     for dict_block in dict_chain:
         dict_block['transactions'] = [
