@@ -69,11 +69,14 @@ class Blockchain:
             proof += 1
         return proof
 
-    def get_balance(self):
+    def get_balance(self, sender=None):
         """Calculate and return the balance of a participant."""
-        if self.public_key == None:
-            return None
-        participant = self.public_key
+        if sender == None:
+            if self.public_key == None:
+                return None
+            participant = self.public_key
+        else:
+            participant = sender
         tx_sender = [[tx.amount for tx in block.transactions
                       if tx.sender == participant] for block in self.chain]
         open_tx_sender = [tx.amount
