@@ -2,5 +2,7 @@
     "cSpell.words": [
         "PKCS",
         "unhexlify"
-    ]
+    ],
+    "python.linting.pep8Enabled": true,
+    "python.linting.enabled": true
 }
